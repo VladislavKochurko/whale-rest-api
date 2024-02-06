@@ -1,7 +1,9 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { SequelizeModule } from "@nestjs/sequelize";
-import * as Joi from 'joi';
+import * as Joi from "joi";
+
+import { ProductsModule } from "./app/products/products.module";
 
 
 @Module({
@@ -27,7 +29,8 @@ import * as Joi from 'joi';
         POSTGRES_DB_NAME: Joi.string().required(),
         POSTGRES_DB_PORT: Joi.number().required()
       })
-    })
+    }),
+    ProductsModule
   ],
   controllers: [],
   providers: []
