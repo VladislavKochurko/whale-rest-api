@@ -1,12 +1,12 @@
-import { BeforeCreate, Column, DataType, Model } from "sequelize-typescript";
-import slugify from "slugify";
+import { BeforeCreate, Column, DataType, Model } from 'sequelize-typescript';
+import slugify from 'slugify';
 
 export class AbstractEntity extends Model {
   @Column({
     allowNull: false,
     primaryKey: true,
     type: DataType.UUID,
-    defaultValue: DataType.UUIDV4
+    defaultValue: DataType.UUIDV4,
   })
   id: string;
 
@@ -18,7 +18,6 @@ export class AbstractEntity extends Model {
 
   @BeforeCreate
   static async generateSlug(instance: AbstractEntity): Promise<void> {
-    instance.slug = slugify
-    (instance.name, { lower: true });
+    instance.slug = slugify(instance.name, { lower: true });
   }
 }

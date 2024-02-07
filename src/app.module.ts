@@ -1,25 +1,25 @@
-import { Module } from "@nestjs/common";
-import { ConfigModule, ConfigService } from "@nestjs/config";
-import { SequelizeModule } from "@nestjs/sequelize";
-import * as Joi from "joi";
+import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { SequelizeModule } from '@nestjs/sequelize';
+import * as Joi from 'joi';
 
-import { ProductsModule } from "./app/products/products.module";
-
+import { ProductsCategoriesModule } from './app/products-categories/products-categories.module';
+import { ProductsModule } from './app/products/products.module';
 
 @Module({
   imports: [
     SequelizeModule.forRootAsync({
       useFactory: (configService: ConfigService) => ({
-        dialect: "postgres",
-        host: "localhost",
-        port: configService.get("POSTGRES_DB_PORT"),
-        username: configService.get("POSTGRES_DB_USER"),
-        password: configService.get("POSTGRES_DB_PASS"),
-        database: configService.get("POSTGRES_DB_NAME"),
+        dialect: 'postgres',
+        host: 'localhost',
+        port: configService.get('POSTGRES_DB_PORT'),
+        username: configService.get('POSTGRES_DB_USER'),
+        password: configService.get('POSTGRES_DB_PASS'),
+        database: configService.get('POSTGRES_DB_NAME'),
         autoLoadModels: true,
-        synchronize: true
+        synchronize: true,
       }),
-      inject: [ConfigService]
+      inject: [ConfigService],
     }),
     ConfigModule.forRoot({
       isGlobal: true,
@@ -27,13 +27,13 @@ import { ProductsModule } from "./app/products/products.module";
         POSTGRES_DB_PASS: Joi.string().required(),
         POSTGRES_DB_USER: Joi.string().required(),
         POSTGRES_DB_NAME: Joi.string().required(),
-        POSTGRES_DB_PORT: Joi.number().required()
-      })
+        POSTGRES_DB_PORT: Joi.number().required(),
+      }),
     }),
-    ProductsModule
+    ProductsModule,
+    ProductsCategoriesModule,
   ],
   controllers: [],
-  providers: []
+  providers: [],
 })
-export class AppModule {
-}
+export class AppModule {}
