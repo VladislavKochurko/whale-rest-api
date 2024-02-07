@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { InjectModel } from '@nestjs/sequelize';
+import { Cache } from 'cache-manager';
 
-import { UpdateResult } from '../common';
 import { CreateProductsCategoryDto, UpdateProductsCategoryDto } from './dto';
 import { ProductsCategory } from './entities';
 
@@ -10,15 +11,19 @@ export class ProductsCategoriesService {
   constructor(
     @InjectModel(ProductsCategory)
     private readonly productsCategoryModel: typeof ProductsCategory,
+    @Inject(CACHE_MANAGER) private cacheService: Cache,
   ) {}
   public async create({
     name,
     slug,
   }: CreateProductsCategoryDto): Promise<ProductsCategory> {
-    return this.productsCategoryModel.create({
+    const category = await this.productsCategoryModel.create({
       name,
       slug,
     });
+    await this.cacheService.set(category.id, category);
+
+    return category;
   }
 
   public async findAll(): Promise<ProductsCategory[]> {
@@ -26,19 +31,35 @@ export class ProductsCategoriesService {
   }
 
   public async findOne(id: string): Promise<ProductsCategory> {
-    return this.productsCategoryModel.findByPk(id);
+    const cachedCategory = await this.cacheService.get<ProductsCategory>(id);
+
+    if (cachedCategory != null) {
+      return cachedCategory;
+    }
+
+    const category = await this.productsCategoryModel.findByPk(id);
+    await this.cacheService.set(id, category);
+
+    return category;
   }
 
   public async update(
     id: string,
     updateProductsCategoryDto: UpdateProductsCategoryDto,
-  ): UpdateResult<ProductsCategory> {
-    return this.productsCategoryModel.update(updateProductsCategoryDto, {
-      where: { id },
-    });
+  ): Promise<ProductsCategory> {
+    return this.productsCategoryModel
+      .update(updateProductsCategoryDto, {
+        where: { id },
+      })
+      .then(async () => {
+        const updatedCategory = await this.productsCategoryModel.findByPk(id);
+        await this.cacheService.set(id, updatedCategory);
+        return updatedCategory;
+      });
   }
 
   public async remove(id: string): Promise<number> {
+    await this.cacheService.del(id);
     return this.productsCategoryModel.destroy({ where: { id } });
   }
 }

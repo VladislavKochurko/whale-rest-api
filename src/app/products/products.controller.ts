@@ -6,13 +6,15 @@ import {
   Patch,
   Param,
   Delete,
+  UseInterceptors,
 } from '@nestjs/common';
+import { CacheInterceptor } from '@nestjs/cache-manager';
 
-import { UpdateResult } from '../common';
 import { Product } from './entities';
 import { ProductsService } from './products.service';
 import { CreateProductDto, UpdateProductDto } from './dto';
 
+@UseInterceptors(CacheInterceptor)
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
@@ -38,7 +40,7 @@ export class ProductsController {
   public async update(
     @Param('id') id: string,
     @Body() updateProductDto: UpdateProductDto,
-  ): UpdateResult<Product> {
+  ): Promise<Product> {
     return this.productsService.update(id, updateProductDto);
   }
 

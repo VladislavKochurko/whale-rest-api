@@ -1,3 +1,4 @@
+import { CacheInterceptor } from '@nestjs/cache-manager';
 import {
   Controller,
   Get,
@@ -6,13 +7,14 @@ import {
   Patch,
   Param,
   Delete,
+  UseInterceptors,
 } from '@nestjs/common';
 
-import { UpdateResult } from '../common';
 import { ProductsCategory } from './entities';
 import { ProductsCategoriesService } from './products-categories.service';
 import { CreateProductsCategoryDto, UpdateProductsCategoryDto } from './dto';
 
+@UseInterceptors(CacheInterceptor)
 @Controller('products-categories')
 export class ProductsCategoriesController {
   constructor(
@@ -40,7 +42,7 @@ export class ProductsCategoriesController {
   public async update(
     @Param('id') id: string,
     @Body() updateProductsCategoryDto: UpdateProductsCategoryDto,
-  ): UpdateResult<ProductsCategory> {
+  ): Promise<ProductsCategory> {
     return this.productsCategoriesService.update(id, updateProductsCategoryDto);
   }
 
