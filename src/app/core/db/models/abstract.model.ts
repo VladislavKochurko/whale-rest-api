@@ -1,7 +1,7 @@
 import { BeforeCreate, Column, DataType, Model } from 'sequelize-typescript';
 import slugify from 'slugify';
 
-export class AbstractEntity extends Model {
+export class AbstractModel extends Model {
   @Column({
     allowNull: false,
     primaryKey: true,
@@ -17,7 +17,7 @@ export class AbstractEntity extends Model {
   name: string;
 
   @BeforeCreate
-  static async generateSlug(instance: AbstractEntity): Promise<void> {
+  static async generateSlug(instance: AbstractModel): Promise<void> {
     instance.slug = slugify(instance.name, { lower: true });
   }
 }
