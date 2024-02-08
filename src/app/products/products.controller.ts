@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseInterceptors,
+  Query,
 } from '@nestjs/common';
 import { CacheInterceptor } from '@nestjs/cache-manager';
 
@@ -29,6 +30,11 @@ export class ProductsController {
   @Get()
   public async findAll(): Promise<Product[]> {
     return this.productsService.findAll();
+  }
+
+  @Get('search')
+  public async search(@Query('name') name: string): Promise<Product[]> {
+    return this.productsService.searchByName(name);
   }
 
   @Get(':id')

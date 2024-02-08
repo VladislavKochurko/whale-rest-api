@@ -2,9 +2,10 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { Global, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SequelizeModule } from '@nestjs/sequelize';
+
+import { SearchModule } from './search/search.module';
 import * as redisStore from 'cache-manager-redis-store';
 import * as Joi from 'joi';
-import { LoggerModule } from './logger';
 
 import { LoggerModule } from './logger';
 
@@ -21,6 +22,9 @@ import { LoggerModule } from './logger';
         CACHE_TTL: Joi.number().required(),
         REDIS_PORT: Joi.number().required(),
         REDIS_HOST: Joi.string().required(),
+        ELASTIC_URL: Joi.string().required(),
+        ELASTIC_USERNAME: Joi.string().required(),
+        ELASTIC_PASSWORD: Joi.string().required(),
       }),
     }),
     CacheModule.registerAsync({
@@ -47,7 +51,8 @@ import { LoggerModule } from './logger';
       inject: [ConfigService],
     }),
     LoggerModule,
+    SearchModule,
   ],
-  exports: [ConfigModule, CacheModule, SequelizeModule],
+  exports: [ConfigModule, CacheModule, SequelizeModule, SearchModule],
 })
 export class CoreModule {}

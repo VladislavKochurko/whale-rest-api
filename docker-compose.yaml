@@ -25,6 +25,35 @@ services:
     container_name: whale-redis-cache
     image: redis
     ports:
-      - 6379:6379
+      - '6379:6379'
     volumes:
       - ~/apps/redis:/var/lib/redis/data
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.1
+    container_name: whale-search
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - node.name=search
+      - cluster.name=whale-cluster
+      - bootstrap.memory_lock=true
+      - discovery.type=single-node
+      - ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD}
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - .~/apps/search:/var/lib/search/data
+    ports:
+      - '9200:9200'
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.12.1
+    container_name: whale-kibana
+    ports:
+      - '5601:5601'
+    environment:
+      - ELASTICSEARCH_URL=https://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+    links:
+      - elasticsearch
