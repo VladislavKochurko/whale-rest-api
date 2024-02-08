@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { CacheInterceptor } from '@nestjs/cache-manager';
 
-import { Product } from './entities';
+import { Product } from './models';
 import { ProductsService } from './products.service';
 import { CreateProductDto, UpdateProductDto } from './dto';
 

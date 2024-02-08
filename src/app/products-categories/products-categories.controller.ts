@@ -10,7 +10,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 
-import { ProductsCategory } from './entities';
+import { ProductsCategory } from './models';
 import { ProductsCategoriesService } from './products-categories.service';
 import { CreateProductsCategoryDto, UpdateProductsCategoryDto } from './dto';
 

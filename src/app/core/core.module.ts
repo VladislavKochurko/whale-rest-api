@@ -4,6 +4,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SequelizeModule } from '@nestjs/sequelize';
 import * as redisStore from 'cache-manager-redis-store';
 import * as Joi from 'joi';
+import { LoggerModule } from './logger';
+
+import { LoggerModule } from './logger';
 
 @Global()
 @Module({
@@ -43,6 +46,7 @@ import * as Joi from 'joi';
       }),
       inject: [ConfigService],
     }),
+    LoggerModule,
   ],
   exports: [ConfigModule, CacheModule, SequelizeModule],
 })

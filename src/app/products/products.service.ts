@@ -4,7 +4,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import { Cache } from 'cache-manager';
 
 import { CreateProductDto, UpdateProductDto } from './dto';
-import { Product } from './entities';
+import { Product } from './models';
 
 @Injectable()
 export class ProductsService {
@@ -14,11 +14,15 @@ export class ProductsService {
     @Inject(CACHE_MANAGER) private cacheService: Cache,
   ) {}
 
-  public async create({ name, slug }: CreateProductDto): Promise<Product> {
+  public async create({
+    name,
+    categories,
+  }: CreateProductDto): Promise<Product> {
     const product = await this.productModel.create({
       name,
-      slug,
     });
+
+    await product.$add('categories', categories);
 
     await this.cacheService.set(product.id, product);
     return product;
