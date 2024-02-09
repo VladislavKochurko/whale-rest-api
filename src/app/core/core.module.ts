@@ -17,6 +17,7 @@ import { CacheModule } from './cache/cache.module';
         POSTGRES_DB_USER: Joi.string().required(),
         POSTGRES_DB_NAME: Joi.string().required(),
         POSTGRES_DB_PORT: Joi.number().required(),
+        POSTGRES_DB_HOST: Joi.string().required(),
         CACHE_TTL: Joi.number().required(),
         REDIS_PORT: Joi.number().required(),
         REDIS_HOST: Joi.string().required(),
@@ -28,7 +29,7 @@ import { CacheModule } from './cache/cache.module';
     SequelizeModule.forRootAsync({
       useFactory: (configService: ConfigService) => ({
         dialect: 'postgres',
-        host: 'localhost',
+        host: configService.get('POSTGRES_DB_HOST'),
         port: configService.get('POSTGRES_DB_PORT'),
         username: configService.get('POSTGRES_DB_USER'),
         password: configService.get('POSTGRES_DB_PASS'),
