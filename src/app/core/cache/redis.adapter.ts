@@ -4,7 +4,7 @@ import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
 import * as util from 'util';
 
-import { getCacheKey } from '../../common';
+import { getCacheKey, RedisOperationFailedException } from '../../common';
 import { CacheNamespace } from './cache.constants';
 
 @Injectable()
@@ -19,7 +19,9 @@ export class RedisAdapter {
       .promisify(this.redisClient.get)
       .bind(this.redisClient);
 
-    const cachedData = await getAsync(key);
+    const cachedData = await getAsync(key).catch((error) => {
+      throw new RedisOperationFailedException(error);
+    });
 
     return JSON.parse(cachedData);
   }
@@ -29,7 +31,11 @@ export class RedisAdapter {
     value: T,
     ttl: number = this.configService.get('CACHE_TTL'),
   ): Promise<void> {
-    this.redisClient.set(key, JSON.stringify(value), 'EX', ttl);
+    this.redisClient
+      .set(key, JSON.stringify(value), 'EX', ttl)
+      .catch((error) => {
+        throw new RedisOperationFailedException(error);
+      });
   }
 
   public async del(key: string): Promise<void> {
@@ -37,7 +43,9 @@ export class RedisAdapter {
       .promisify(this.redisClient.del)
       .bind(this.redisClient);
 
-    await delAsync(key);
+    await delAsync(key).catch((error) => {
+      throw new RedisOperationFailedException(error);
+    });
   }
 
   public async mget<T>(key: string): Promise<T[] | null> {
@@ -45,10 +53,14 @@ export class RedisAdapter {
       .promisify(this.redisClient.mget)
       .bind(this.redisClient);
 
-    const cachedData = await mgetAsync(key).then((data: T[]) => {
-      const filteredData = data.filter((data) => data != null);
-      return filteredData.length > 0 ? filteredData : null;
-    });
+    const cachedData = await mgetAsync(key)
+      .then((data: T[]) => {
+        const filteredData = data.filter((data) => data != null);
+        return filteredData.length > 0 ? filteredData : null;
+      })
+      .catch((error) => {
+        throw new RedisOperationFailedException(error);
+      });
     return JSON.parse(cachedData);
   }
 
@@ -66,6 +78,8 @@ export class RedisAdapter {
           ttl,
         ),
       ),
-    );
+    ).catch((error) => {
+      throw new RedisOperationFailedException(error);
+    });
   }
 }

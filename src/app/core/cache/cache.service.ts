@@ -7,6 +7,7 @@ import { RedisAdapter } from './redis.adapter';
 import { CacheNamespace } from './cache.constants';
 import { Product } from '../../products/models';
 import { ProductsCategory } from '../../products-categories/models';
+import { RefreshCacheException } from '../../common';
 
 @Injectable()
 export class CacheService implements OnApplicationBootstrap {
@@ -26,17 +27,21 @@ export class CacheService implements OnApplicationBootstrap {
   }
 
   public async refreshCache(): Promise<void> {
-    const [products, categories] = await Promise.all([
-      this.productsService.findAll(),
-      this.productsCategoriesService.findAll(),
-    ]);
+    try {
+      const [products, categories] = await Promise.all([
+        this.productsService.findAll(),
+        this.productsCategoriesService.findAll(),
+      ]);
 
-    await Promise.all([
-      this.redisAdapter.setMany<Product>(CacheNamespace.Products, products),
-      this.redisAdapter.setMany<ProductsCategory>(
-        CacheNamespace.ProductsCategories,
-        categories,
-      ),
-    ]);
+      await Promise.all([
+        this.redisAdapter.setMany<Product>(CacheNamespace.Products, products),
+        this.redisAdapter.setMany<ProductsCategory>(
+          CacheNamespace.ProductsCategories,
+          categories,
+        ),
+      ]);
+    } catch (error) {
+      throw new RefreshCacheException(error);
+    }
   }
 }
