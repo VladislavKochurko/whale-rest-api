@@ -1,21 +1,22 @@
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Cache } from 'cache-manager';
 
 import { PRODUCT_INDEX } from '../core/search';
 import { SearchService } from '../core/search/search.service';
 
 import { CreateProductDto, UpdateProductDto } from './dto';
 import { Product } from './models';
+import { RedisAdapter } from '../core/cache/redis.adapter';
+import { CacheNamespace } from '../core/cache/cache.constants';
+import { ALL_KEY, getCacheKey } from '../common';
 
 @Injectable()
 export class ProductsService {
   constructor(
     @InjectModel(Product)
     private readonly productModel: typeof Product,
-    @Inject(CACHE_MANAGER) private cacheService: Cache,
     private readonly searchService: SearchService,
+    private readonly redisAdapter: RedisAdapter,
   ) {}
 
   public async create({
@@ -33,24 +34,45 @@ export class ProductsService {
         index: PRODUCT_INDEX,
         entity: { id: product.id, name: product.name },
       }),
-      this.cacheService.set(product.id, product),
+      this.redisAdapter.set<Product>(
+        getCacheKey(CacheNamespace.Products, product.id),
+        product,
+      ),
     ]);
+
     return product;
   }
 
   public async findAll(): Promise<Product[]> {
-    return this.productModel.findAll();
+    const cachedProducts = await this.redisAdapter.mget<Product>(
+      getCacheKey(CacheNamespace.Products, ALL_KEY),
+    );
+
+    if (cachedProducts != null) {
+      return cachedProducts;
+    }
+
+    return await this.productModel.findAll();
   }
 
   public async findOne(id: string): Promise<Product> {
-    const cachedProduct = await this.cacheService.get<Product>(id);
+    const cachedProduct = await this.redisAdapter.get<Product>(
+      getCacheKey(CacheNamespace.Products, id),
+    );
 
     if (cachedProduct != null) {
       return cachedProduct;
     }
+    const product = await this.productModel.findOne({ where: { id } });
 
-    const product = await this.productModel.findByPk(id);
-    await this.cacheService.set(id, product);
+    if (product == null) {
+      throw new NotFoundException('Product not found');
+    }
+
+    await this.redisAdapter.set<Product>(
+      getCacheKey(CacheNamespace.Products, id),
+      product,
+    );
 
     return product;
   }
@@ -63,13 +85,18 @@ export class ProductsService {
       .update(updateProductDto, { where: { id } })
       .then(async () => {
         const updatedProduct = await this.productModel.findByPk(id);
+
         await Promise.all([
           this.searchService.index({
             index: PRODUCT_INDEX,
             entity: { id: updatedProduct.id, name: updatedProduct.name },
           }),
-          this.cacheService.set(updatedProduct.id, updatedProduct),
+          this.redisAdapter.set<Product>(
+            getCacheKey(CacheNamespace.Products, id),
+            updatedProduct,
+          ),
         ]);
+
         return updatedProduct;
       });
   }
@@ -83,8 +110,9 @@ export class ProductsService {
             index: PRODUCT_INDEX,
             entityId: id,
           }),
-          this.cacheService.del(id),
+          this.redisAdapter.del(getCacheKey(CacheNamespace.Products, id)),
         ]);
+
         return response;
       });
   }

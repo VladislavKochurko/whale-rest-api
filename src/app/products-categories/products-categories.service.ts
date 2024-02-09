@@ -1,17 +1,18 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Cache } from 'cache-manager';
 
 import { CreateProductsCategoryDto, UpdateProductsCategoryDto } from './dto';
 import { ProductsCategory } from './models';
+import { CacheNamespace } from '../core/cache/cache.constants';
+import { RedisAdapter } from '../core/cache/redis.adapter';
+import { ALL_KEY, getCacheKey } from '../common';
 
 @Injectable()
 export class ProductsCategoriesService {
   constructor(
     @InjectModel(ProductsCategory)
     private readonly productsCategoryModel: typeof ProductsCategory,
-    @Inject(CACHE_MANAGER) private cacheService: Cache,
+    private readonly redisAdapter: RedisAdapter,
   ) {}
   public async create({
     name,
@@ -19,24 +20,47 @@ export class ProductsCategoriesService {
     const category = await this.productsCategoryModel.create({
       name,
     });
-    await this.cacheService.set(category.id, category);
+    await this.redisAdapter.set<ProductsCategory>(
+      getCacheKey(CacheNamespace.ProductsCategories, category.id),
+      category,
+    );
 
     return category;
   }
 
   public async findAll(): Promise<ProductsCategory[]> {
-    return this.productsCategoryModel.findAll();
+    const cachedCategories = await this.redisAdapter.mget<ProductsCategory>(
+      getCacheKey(CacheNamespace.ProductsCategories, ALL_KEY),
+    );
+
+    if (cachedCategories != null) {
+      return cachedCategories;
+    }
+
+    return await this.productsCategoryModel.findAll();
   }
 
   public async findOne(id: string): Promise<ProductsCategory> {
-    const cachedCategory = await this.cacheService.get<ProductsCategory>(id);
+    const cachedCategory = await this.redisAdapter.get<ProductsCategory>(
+      getCacheKey(CacheNamespace.ProductsCategories, id),
+    );
 
     if (cachedCategory != null) {
       return cachedCategory;
     }
 
-    const category = await this.productsCategoryModel.findByPk(id);
-    await this.cacheService.set(id, category);
+    const category = await this.productsCategoryModel.findOne({
+      where: { id },
+    });
+
+    if (category == null) {
+      throw new NotFoundException('Product Category not found');
+    }
+
+    await this.redisAdapter.set<ProductsCategory>(
+      getCacheKey(CacheNamespace.ProductsCategories, id),
+      category,
+    );
 
     return category;
   }
@@ -51,13 +75,21 @@ export class ProductsCategoriesService {
       })
       .then(async () => {
         const updatedCategory = await this.productsCategoryModel.findByPk(id);
-        await this.cacheService.set(id, updatedCategory);
+
+        await this.redisAdapter.set<ProductsCategory>(
+          getCacheKey(CacheNamespace.ProductsCategories, id),
+          updatedCategory,
+        );
+
         return updatedCategory;
       });
   }
 
   public async remove(id: string): Promise<number> {
-    await this.cacheService.del(id);
+    await this.redisAdapter.del(
+      getCacheKey(CacheNamespace.ProductsCategories, id),
+    );
+
     return this.productsCategoryModel.destroy({ where: { id } });
   }
 }

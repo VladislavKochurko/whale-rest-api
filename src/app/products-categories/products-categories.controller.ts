@@ -1,4 +1,3 @@
-import { CacheInterceptor } from '@nestjs/cache-manager';
 import {
   Controller,
   Get,
@@ -7,14 +6,12 @@ import {
   Patch,
   Param,
   Delete,
-  UseInterceptors,
 } from '@nestjs/common';
 
 import { ProductsCategory } from './models';
 import { ProductsCategoriesService } from './products-categories.service';
 import { CreateProductsCategoryDto, UpdateProductsCategoryDto } from './dto';
 
-@UseInterceptors(CacheInterceptor)
 @Controller('products-categories')
 export class ProductsCategoriesController {
   constructor(
