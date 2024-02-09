@@ -10,7 +10,7 @@ import { SearchService } from './search.service';
   imports: [
     ElasticsearchModule.registerAsync({
       useFactory: async (configService: ConfigService) => {
-        const certificatePath = path.resolve(process.cwd(), 'http_ca.crt');
+        const certificatePath = path.resolve(process.cwd(), './certs/ca/ca.crt');
         try {
           const cert = await fs.promises.readFile(certificatePath);
           return {
@@ -19,8 +19,9 @@ import { SearchService } from './search.service';
               username: configService.get('ELASTIC_USERNAME'),
               password: configService.get('ELASTIC_PASSWORD'),
             },
-            tls: {
+            ssl: {
               ca: cert,
+              rejectUnauthorized: false,
             },
           };
         } catch (err) {
