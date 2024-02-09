@@ -8,8 +8,9 @@ import { GlobalExceptionsFilter } from './app/core/filters';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
-  app.useGlobalFilters(new GlobalExceptionsFilter());
-  app.useLogger(app.get(Logger));
+  const logger = app.get(Logger);
+  app.useGlobalFilters(new GlobalExceptionsFilter(logger));
+  app.useLogger(logger);
   await app.listen(3000);
 }
 
