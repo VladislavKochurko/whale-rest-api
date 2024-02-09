@@ -1,12 +1,9 @@
-import {
-  Injectable,
-  InternalServerErrorException,
-  OnModuleInit,
-} from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ElasticsearchService as ElasticsearchClient } from '@nestjs/elasticsearch';
 
 import { PRODUCT_INDEX } from './constants';
 import { productMapping } from './mappings';
+import { ElasticSearchException } from '../../common';
 
 @Injectable()
 export class SearchService implements OnModuleInit {
@@ -28,14 +25,11 @@ export class SearchService implements OnModuleInit {
             mappings: productMapping,
           })
           .catch((error: Error) => {
-            throw new InternalServerErrorException(
-              error,
-              'Elasticsearch Error',
-            );
+            throw new ElasticSearchException(error);
           });
       }
     } catch (error) {
-      throw new InternalServerErrorException(error, 'Elasticsearch Error');
+      throw new ElasticSearchException(error);
     }
   }
 
@@ -60,7 +54,7 @@ export class SearchService implements OnModuleInit {
         return response.hits.hits.map((document) => document._source);
       })
       .catch((error) => {
-        throw new InternalServerErrorException(error, 'Elasticsearch Error');
+        throw new ElasticSearchException(error);
       });
   }
 
@@ -68,7 +62,7 @@ export class SearchService implements OnModuleInit {
     return this.elasticsearchClient
       .index({ id: entity.id, index, document: entity })
       .catch((error) => {
-        throw new InternalServerErrorException(error, 'Elasticsearch Error');
+        throw new ElasticSearchException(error);
       });
   }
 
@@ -82,7 +76,7 @@ export class SearchService implements OnModuleInit {
     return this.elasticsearchClient
       .delete({ id: entityId, index })
       .catch((error) => {
-        throw new InternalServerErrorException(error, 'Elasticsearch Error');
+        throw new ElasticSearchException(error);
       });
   }
 }
