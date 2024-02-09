@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 
-import { PRODUCT_INDEX } from '../core/search';
+import { PRODUCT_INDEX, ElasticProduct } from '../core/search';
 import { SearchService } from '../core/search/search.service';
 
 import { CreateProductDto, UpdateProductDto } from './dto';
@@ -30,7 +30,7 @@ export class ProductsService {
     await product.$add('categories', categories);
 
     await Promise.all([
-      this.searchService.index({
+      this.searchService.index<ElasticProduct>({
         index: PRODUCT_INDEX,
         entity: { id: product.id, name: product.name },
       }),
@@ -86,8 +86,12 @@ export class ProductsService {
       .then(async () => {
         const updatedProduct = await this.productModel.findByPk(id);
 
+        if (updateProductDto.categories != null) {
+          await updatedProduct.$set('categories', updateProductDto.categories);
+        }
+
         await Promise.all([
-          this.searchService.index({
+          this.searchService.index<ElasticProduct>({
             index: PRODUCT_INDEX,
             entity: { id: updatedProduct.id, name: updatedProduct.name },
           }),
