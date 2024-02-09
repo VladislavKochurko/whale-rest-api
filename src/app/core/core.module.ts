@@ -1,13 +1,11 @@
-import { CacheModule } from '@nestjs/cache-manager';
 import { Global, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SequelizeModule } from '@nestjs/sequelize';
-
-import { SearchModule } from './search/search.module';
-import * as redisStore from 'cache-manager-redis-store';
 import * as Joi from 'joi';
 
+import { SearchModule } from './search/search.module';
 import { LoggerModule } from './logger';
+import { CacheModule } from './cache/cache.module';
 
 @Global()
 @Module({
@@ -27,16 +25,6 @@ import { LoggerModule } from './logger';
         ELASTIC_PASSWORD: Joi.string().required(),
       }),
     }),
-    CacheModule.registerAsync({
-      useFactory: (configService: ConfigService) => ({
-        isGlobal: true,
-        store: redisStore,
-        host: configService.get('REDIS_HOST'),
-        port: configService.get('REDIS_PORT'),
-        ttl: +configService.get('CACHE_TTL'),
-      }),
-      inject: [ConfigService],
-    }),
     SequelizeModule.forRootAsync({
       useFactory: (configService: ConfigService) => ({
         dialect: 'postgres',
@@ -52,7 +40,8 @@ import { LoggerModule } from './logger';
     }),
     LoggerModule,
     SearchModule,
+    CacheModule,
   ],
-  exports: [ConfigModule, CacheModule, SequelizeModule, SearchModule],
+  exports: [ConfigModule, SequelizeModule, SearchModule, CacheModule],
 })
 export class CoreModule {}
